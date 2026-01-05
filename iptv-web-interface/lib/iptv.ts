@@ -68,7 +68,7 @@ export async function fetchChannels(): Promise<Channel[]> {
       m3uToChannel(m3uChannel, index),
     )
 
-    // 按频道名称合并：相同名称的频道合并为一个，使用第一个的详细信息
+    // 按频道名称合并：相同名称的频道合并为一个，保留最佳信息
     const channelsByName = new Map<string, Channel>()
     channels.forEach((channel) => {
       const normalizedName = channel.name.trim()
@@ -76,8 +76,10 @@ export async function fetchChannels(): Promise<Channel[]> {
         // 第一个出现的频道，使用它的信息
         channelsByName.set(normalizedName, channel)
       } else {
-        // 如果已存在同名频道，合并分类信息
+        // 如果已存在同名频道，合并信息
         const existing = channelsByName.get(normalizedName)!
+        
+        // 合并分类信息
         const existingCategories = new Set(existing.categories)
         channel.categories.forEach((cat) => existingCategories.add(cat))
         existing.categories = Array.from(existingCategories)
@@ -86,6 +88,25 @@ export async function fetchChannels(): Promise<Channel[]> {
         const existingAltNames = new Set(existing.alt_names)
         channel.alt_names.forEach((name) => existingAltNames.add(name))
         existing.alt_names = Array.from(existingAltNames)
+        
+        // 如果现有频道没有 logo 但新频道有，使用新频道的 logo
+        if (!existing.logo && channel.logo) {
+          existing.logo = channel.logo
+        }
+        
+        // 优先使用更高质量的 logo（如 gitee/github 上的）
+        if (channel.logo && (
+          channel.logo.includes('gitee.com') || 
+          channel.logo.includes('github.com') ||
+          channel.logo.includes('githubusercontent.com')
+        )) {
+          // 如果新 logo 来自可靠源，优先使用
+          if (!existing.logo.includes('gitee.com') && 
+              !existing.logo.includes('github.com') &&
+              !existing.logo.includes('githubusercontent.com')) {
+            existing.logo = channel.logo
+          }
+        }
       }
     })
     const mergedChannels = Array.from(channelsByName.values())

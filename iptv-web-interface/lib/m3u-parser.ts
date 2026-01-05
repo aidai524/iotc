@@ -44,8 +44,10 @@ export function parseM3U(content: string): M3UChannel[] {
         const tvgNameMatch = attributes.match(/tvg-name="([^"]*)"/)
         const tvgLogoMatch = attributes.match(/tvg-logo="([^"]*)"/)
         const groupTitleMatch = attributes.match(/group-title="([^"]*)"/)
-        const userAgentMatch = attributes.match(/user-agent="([^"]*)"/)
-        const refererMatch = attributes.match(/referer="([^"]*)"/)
+        // 支持两种格式：user-agent 和 http-user-agent
+        const userAgentMatch = attributes.match(/(?:http-)?user-agent="([^"]*)"/)
+        // 支持两种格式：referer 和 http-referer / http-referrer
+        const refererMatch = attributes.match(/(?:http-)?refer(?:r)?er="([^"]*)"/)
         const countryMatch = attributes.match(/country="([^"]*)"/)
         const languageMatch = attributes.match(/language="([^"]*)"/)
 
