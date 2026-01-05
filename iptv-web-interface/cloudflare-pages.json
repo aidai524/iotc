@@ -1,0 +1,8 @@
+{
+  "buildCommand": "pnpm run pages:build",
+  "outputDirectory": ".vercel/output/static",
+  "devCommand": "pnpm run pages:dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "nodeVersion": "20"
+}
