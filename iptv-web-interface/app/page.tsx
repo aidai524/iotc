@@ -312,7 +312,7 @@ export default function Home() {
   const isLoading = loadingChannels || loadingStreams
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-[#08080f] flex">
+    <main className="h-screen w-screen overflow-hidden flex">
       <ChannelList
         channels={filteredChannels}
         streamMap={streamMap}

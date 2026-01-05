@@ -1,18 +1,14 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 // 注意：Vercel Analytics 在 Cloudflare Pages 上可能不工作
 // 如需在 Cloudflare 上使用分析，可以考虑使用 Cloudflare Web Analytics
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
-
 export const metadata: Metadata = {
-  title: "IPTV 直播 - 在线电视",
-  description: "观看来自世界各地的直播电视频道",
+  title: "IPTV Live - 在线直播电视",
+  description: "探索来自世界各地的直播电视频道，流畅播放，高清画质",
   generator: "v0.app",
   icons: {
     icon: [
@@ -34,7 +30,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#08080f",
+  themeColor: "#0a0a14",
   width: "device-width",
   initialScale: 1,
 }
@@ -46,7 +42,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className="dark">
-      <body className={`font-sans antialiased`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className="antialiased noise-overlay">
         {children}
         <Analytics />
       </body>

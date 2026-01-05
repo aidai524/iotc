@@ -2,8 +2,23 @@
 
 import type { Channel, Stream } from "@/lib/iptv"
 import { useEffect, useRef, useState } from "react"
-import { Copy, AlertCircle, Clock, Play, Loader2, Maximize, Minimize } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { 
+  Copy, 
+  AlertCircle, 
+  Clock, 
+  Play, 
+  Pause,
+  Loader2, 
+  Maximize, 
+  Minimize,
+  Volume2,
+  VolumeX,
+  Radio,
+  Layers,
+  ExternalLink,
+  Check,
+  SkipForward
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Hls from "hls.js"
@@ -11,7 +26,7 @@ import Hls from "hls.js"
 interface NowPlayingPanelProps {
   channel: Channel | null
   stream: Stream | null
-  streams?: Stream[] // 添加多个流源支持
+  streams?: Stream[]
 }
 
 export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPanelProps) {
@@ -27,17 +42,48 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
   const [loadTimeout, setLoadTimeout] = useState<NodeJS.Timeout | null>(null)
   const [logoError, setLogoError] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
+  const [showControls, setShowControls] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // 获取当前要尝试的流
   const currentStreams = streams.length > 0 ? streams : stream ? [stream] : []
   const currentStream = currentStreams[currentStreamIndex] || stream
 
+  // 自动隐藏控制栏
+  useEffect(() => {
+    const hideControls = () => {
+      if (isPlaying && !playbackError) {
+        setShowControls(false)
+      }
+    }
+
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current)
+    }
+
+    if (showControls && isPlaying) {
+      controlsTimeoutRef.current = setTimeout(hideControls, 3000)
+    }
+
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current)
+      }
+    }
+  }, [showControls, isPlaying, playbackError])
+
+  const handleMouseMove = () => {
+    setShowControls(true)
+  }
+
+  // 时间更新
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
       setCurrentTime(
-        now.toLocaleTimeString("en-GB", {
+        now.toLocaleTimeString("zh-CN", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,
@@ -72,26 +118,23 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
     const video = videoRef.current
     const isHLS = currentStream.url.includes(".m3u8") || currentStream.url.includes("m3u8")
 
-    // 如果是 HLS 流且浏览器支持 hls.js
     if (isHLS && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 90,
-        // 配置 HTTP headers
         xhrSetup: (xhr, url) => {
-            const userAgent =
-              currentStream.user_agent ||
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            xhr.setRequestHeader("User-Agent", userAgent)
-            if (currentStream.http_referrer) {
-              xhr.setRequestHeader("Referer", currentStream.http_referrer)
-            }
+          const userAgent =
+            currentStream.user_agent ||
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          xhr.setRequestHeader("User-Agent", userAgent)
+          if (currentStream.http_referrer) {
+            xhr.setRequestHeader("Referer", currentStream.http_referrer)
+          }
         },
       })
 
       hlsRef.current = hls
-
       hls.loadSource(currentStream.url)
       hls.attachMedia(video)
 
@@ -103,221 +146,116 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
           clearTimeout(loadTimeout)
           setLoadTimeout(null)
         }
-        // 自动播放
         video.play().catch((err) => {
           console.warn("Auto-play failed:", err)
         })
       })
 
       hls.on(Hls.Events.ERROR, (event, data) => {
-        // 检查 data 是否存在且有效
-        if (!data) {
-          console.warn("HLS.js error: empty error data")
-          return
-        }
+        if (!data) return
 
-        // 记录错误信息（但不输出空对象）
-        if (data.fatal !== undefined || data.type !== undefined || data.details) {
-          console.error("HLS.js error:", {
-            fatal: data.fatal,
-            type: data.type,
-            details: data.details,
-            error: data.error,
-            url: data.url,
-          })
-        }
-
-        // 只处理致命错误
         if (data.fatal) {
           setIsLoading(false)
           
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              setErrorMessage("网络错误，无法加载视频")
+              setErrorMessage("网络错误，无法加载视频流")
               setPlaybackError(true)
-              // 尝试恢复
               try {
                 hls.startLoad()
               } catch (e) {
-                console.warn("Failed to recover from network error:", e)
-                // 如果恢复失败，尝试下一个流源
                 if (currentStreams.length > currentStreamIndex + 1) {
-                  setTimeout(() => {
-                    setCurrentStreamIndex((prev) => prev + 1)
-                  }, 2000)
+                  setTimeout(() => setCurrentStreamIndex((prev) => prev + 1), 2000)
                 }
               }
               break
             case Hls.ErrorTypes.MEDIA_ERROR:
-              setErrorMessage("媒体错误，尝试恢复...")
+              setErrorMessage("媒体错误，尝试恢复中...")
               try {
                 hls.recoverMediaError()
               } catch (e) {
-                console.warn("Failed to recover from media error:", e)
                 setPlaybackError(true)
-                setIsLoading(false)
                 if (currentStreams.length > currentStreamIndex + 1) {
-                  setTimeout(() => {
-                    setCurrentStreamIndex((prev) => prev + 1)
-                  }, 2000)
+                  setTimeout(() => setCurrentStreamIndex((prev) => prev + 1), 2000)
                 }
               }
               break
             default:
-              setErrorMessage("播放错误，尝试下一个流源")
+              setErrorMessage("播放错误")
               setPlaybackError(true)
-              setIsLoading(false)
-              // 尝试下一个流源
               if (currentStreams.length > currentStreamIndex + 1) {
-                setTimeout(() => {
-                  setCurrentStreamIndex((prev) => prev + 1)
-                }, 2000)
+                setTimeout(() => setCurrentStreamIndex((prev) => prev + 1), 2000)
               }
               break
           }
-        } else {
-          // 非致命错误，只记录日志，不中断播放
-          console.warn("HLS.js non-fatal error:", data.details || data.type)
         }
       })
     } else if (isHLS && video.canPlayType("application/vnd.apple.mpegurl")) {
-      // 原生 HLS 支持（Safari）
       video.src = currentStream.url
       video.addEventListener("loadedmetadata", () => {
         setIsLoading(false)
         setPlaybackError(false)
-        setErrorMessage("")
-        if (loadTimeout) {
-          clearTimeout(loadTimeout)
-          setLoadTimeout(null)
-        }
-        // 自动播放
-        video.play().catch((err) => {
-          console.warn("Auto-play failed:", err)
-        })
+        video.play().catch(console.warn)
       })
     } else {
-      // 普通视频文件
       video.src = currentStream.url
       video.addEventListener("loadedmetadata", () => {
         setIsLoading(false)
         setPlaybackError(false)
-        setErrorMessage("")
-        if (loadTimeout) {
-          clearTimeout(loadTimeout)
-          setLoadTimeout(null)
-        }
-        // 自动播放
-        video.play().catch((err) => {
-          console.warn("Auto-play failed:", err)
-        })
+        video.play().catch(console.warn)
       })
     }
 
-    // 设置加载超时（15秒）
+    // 加载超时
     const timeout = setTimeout(() => {
       if (!isPlaying && !playbackError) {
-        setErrorMessage("加载超时，流可能不可用")
+        setErrorMessage("加载超时，正在尝试其他流源...")
         setPlaybackError(true)
         setIsLoading(false)
-        // 尝试下一个流源
         if (currentStreams.length > currentStreamIndex + 1) {
-          setTimeout(() => {
-            setCurrentStreamIndex((prev) => prev + 1)
-          }, 1000)
+          setTimeout(() => setCurrentStreamIndex((prev) => prev + 1), 1000)
         }
       }
     }, 15000)
     setLoadTimeout(timeout)
 
-    // 事件监听
     const handlePlay = () => {
       setIsPlaying(true)
       setIsLoading(false)
       setPlaybackError(false)
       setErrorMessage("")
-      if (loadTimeout) {
-        clearTimeout(loadTimeout)
-        setLoadTimeout(null)
-      }
     }
 
-    const handlePause = () => {
-      setIsPlaying(false)
-    }
-
-    const handleEnded = () => {
-      setIsPlaying(false)
-    }
+    const handlePause = () => setIsPlaying(false)
+    const handleEnded = () => setIsPlaying(false)
 
     const handleError = () => {
       const error = video.error
       setIsLoading(false)
-      if (loadTimeout) {
-        clearTimeout(loadTimeout)
-        setLoadTimeout(null)
-      }
 
       if (error) {
-        let errorMsg = "播放失败"
-        let shouldTryNext = false
-
-        switch (error.code) {
-          case 1: // MEDIA_ERR_ABORTED
-            errorMsg = "播放被中止"
-            break
-          case 2: // MEDIA_ERR_NETWORK
-            errorMsg = "网络错误，无法加载视频"
-            shouldTryNext = true
-            break
-          case 3: // MEDIA_ERR_DECODE
-            errorMsg = "视频解码失败，格式不支持"
-            shouldTryNext = true
-            break
-          case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
-            errorMsg = "视频格式不支持或源不可用"
-            shouldTryNext = true
-            break
-          default:
-            errorMsg = `播放错误 (${error.code})`
-            shouldTryNext = true
+        const messages: Record<number, string> = {
+          1: "播放被中止",
+          2: "网络错误",
+          3: "视频解码失败",
+          4: "格式不支持",
         }
-
-        console.error("Video error:", {
-          code: error.code,
-          message: errorMsg,
-          streamUrl: currentStream.url,
-        })
-
-        setErrorMessage(errorMsg)
+        setErrorMessage(messages[error.code] || `播放错误 (${error.code})`)
         setPlaybackError(true)
 
-        // 尝试下一个流源
-        if (shouldTryNext && currentStreams.length > currentStreamIndex + 1) {
-          setTimeout(() => {
-            setCurrentStreamIndex((prev) => prev + 1)
-          }, 2000)
+        if ([2, 3, 4].includes(error.code) && currentStreams.length > currentStreamIndex + 1) {
+          setTimeout(() => setCurrentStreamIndex((prev) => prev + 1), 2000)
         }
       }
-    }
-
-    const handleLoadStart = () => {
-      setPlaybackError(false)
-      setErrorMessage("")
-      setIsLoading(true)
     }
 
     video.addEventListener("play", handlePlay)
     video.addEventListener("pause", handlePause)
     video.addEventListener("ended", handleEnded)
     video.addEventListener("error", handleError)
-    video.addEventListener("loadstart", handleLoadStart)
 
-    // 清理函数
     return () => {
-      if (loadTimeout) {
-        clearTimeout(loadTimeout)
-      }
+      if (loadTimeout) clearTimeout(loadTimeout)
       if (hlsRef.current) {
         hlsRef.current.destroy()
         hlsRef.current = null
@@ -326,41 +264,25 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
       video.removeEventListener("pause", handlePause)
       video.removeEventListener("ended", handleEnded)
       video.removeEventListener("error", handleError)
-      video.removeEventListener("loadstart", handleLoadStart)
     }
   }, [currentStream, currentStreamIndex, currentStreams])
 
-  const handlePlay = () => {
-    if (videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.error("Play error:", err)
-        setPlaybackError(true)
-        setErrorMessage("无法播放，可能需要用户交互")
-      })
-    }
-  }
-
-  const handlePause = () => {
-    if (videoRef.current) {
-      videoRef.current.pause()
-    }
-  }
+  const handlePlay = () => videoRef.current?.play().catch(console.error)
+  const handlePause = () => videoRef.current?.pause()
 
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted
+      setIsMuted(!isMuted)
     }
   }
 
   const toggleFullscreen = async () => {
     if (!containerRef.current) return
-
     try {
       if (!document.fullscreenElement) {
-        // 进入全屏
         await containerRef.current.requestFullscreen()
       } else {
-        // 退出全屏
         await document.exitFullscreen()
       }
     } catch (error) {
@@ -368,16 +290,12 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
     }
   }
 
-  // 监听全屏状态变化
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement)
     }
-
     document.addEventListener("fullscreenchange", handleFullscreenChange)
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
   }, [])
 
   const tryNextStream = () => {
@@ -395,193 +313,342 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // 空状态 - 未选择频道
   if (!channel) {
     return (
-      <div className="flex-1 relative h-full bg-gradient-to-br from-[#0f0f1a] via-[#151525] to-[#0a0a15]">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-          <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6">
-            <Play className="w-12 h-12 text-white/20" />
-          </div>
-          <p className="text-white/40 text-lg text-center">选择一个频道并点击播放开始观看</p>
+      <div className="flex-1 relative h-full bg-gradient-to-br from-[#0a0a18] via-[#0f0f20] to-[#080814] overflow-hidden">
+        {/* 装饰性背景元素 */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl" />
         </div>
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 text-white/50 text-sm">
-          <Clock className="w-4 h-4" />
-          <span>{currentTime}</span>
+        
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+          <div className="relative mb-8">
+            <div className="w-28 h-28 rounded-3xl bg-white/5 flex items-center justify-center border border-white/10 animate-pulse-glow">
+              <Radio className="w-12 h-12 text-white/20" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
+              <Play className="w-5 h-5 text-cyan-400 fill-cyan-400" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-white/80 mb-2">选择频道开始观看</h2>
+          <p className="text-white/40 text-center max-w-md">
+            从左侧列表中选择一个频道，点击即可开始播放直播内容
+          </p>
+        </div>
+
+        {/* 时间显示 */}
+        <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          <Clock className="w-4 h-4 text-white/40" />
+          <span className="text-white/60 font-mono text-sm">{currentTime}</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div ref={containerRef} className="flex-1 relative h-full overflow-hidden">
-      {/* Background */}
+    <div 
+      ref={containerRef} 
+      className="flex-1 relative h-full overflow-hidden bg-black"
+      onMouseMove={handleMouseMove}
+      onClick={() => setShowControls(true)}
+    >
+      {/* 背景模糊层 */}
       <div className="absolute inset-0">
         {channel.logo && !logoError ? (
           <Image
             src={channel.logo}
             alt=""
             fill
-            className="object-cover scale-150 blur-3xl opacity-30"
+            className="object-cover scale-150 blur-3xl opacity-20"
             unoptimized
             onError={() => setLogoError(true)}
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 to-blue-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-purple-900/10 to-blue-900/20" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a15] via-[#0a0a15]/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a15]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
       </div>
 
-      {/* Time */}
-      <div className="absolute top-4 right-4 flex items-center gap-1.5 text-white/60 text-sm z-10">
-        <Clock className="w-4 h-4" />
-        <span>{currentTime}</span>
-      </div>
-
-      {/* Video Player */}
+      {/* 视频播放器 */}
       {currentStream && (
-        <div className="absolute inset-0 w-full h-full">
+        <div className="absolute inset-0">
           <video
             ref={videoRef}
             className={cn(
-              "absolute inset-0 w-full h-full transition-opacity duration-500",
+              "w-full h-full object-contain transition-opacity duration-500",
               isPlaying && !playbackError ? "opacity-100" : "opacity-0",
             )}
             playsInline
-            muted
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
+            muted={isMuted}
           />
-          {/* Loading Indicator */}
+          
+          {/* 加载指示器 */}
           {isLoading && !playbackError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 text-white/60 animate-spin" />
-                <p className="text-white/60 text-sm">
-                  正在加载流源 {currentStreamIndex + 1}/{currentStreams.length}...
-                </p>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-2 border-cyan-500/30 animate-ping absolute inset-0" />
+                  <div className="w-16 h-16 rounded-full border-2 border-t-cyan-400 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                </div>
+                <div className="text-center">
+                  <p className="text-white/80 font-medium">正在连接...</p>
+                  <p className="text-white/40 text-sm mt-1">
+                    流源 {currentStreamIndex + 1} / {currentStreams.length}
+                  </p>
+                </div>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Content Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
-        <div className="mb-6">
-          <span className="text-cyan-400 text-xs font-semibold uppercase tracking-wider">正在播放</span>
-          <h2 className="text-2xl font-bold text-white mt-1 text-balance">{channel.name}</h2>
-          <p className="text-white/60 text-sm mt-2">直播 • {channel.categories[0] || "娱乐"}</p>
-          <p className="text-white/40 text-sm mt-2 line-clamp-2">
-            正在播放 {channel.name} 的最新节目，为您提供 24/7 优质内容。
-          </p>
-        </div>
-
-        {/* Controls */}
-        {currentStream && (
-          <div className="flex items-center gap-3">
-            {!playbackError && !isLoading ? (
-              <>
-                <Button
-                  onClick={isPlaying ? handlePause : handlePlay}
-                  size="lg"
-                  className="bg-white text-black hover:bg-white/90 rounded-full px-6"
-                  disabled={isLoading}
-                >
-                  {isPlaying ? "暂停" : "播放"}
-                </Button>
-                <Button
-                  onClick={toggleMute}
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full border-white/20 bg-white/5 hover:bg-white/10 text-white"
-                  disabled={isLoading}
-                >
-                  {videoRef.current?.muted ? "🔇" : "🔊"}
-                </Button>
-                <Button
-                  onClick={toggleFullscreen}
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full border-white/20 bg-white/5 hover:bg-white/10 text-white"
-                  disabled={isLoading}
-                  title={isFullscreen ? "退出全屏" : "全屏"}
-                >
-                  {isFullscreen ? (
-                    <Minimize className="w-4 h-4" />
-                  ) : (
-                    <Maximize className="w-4 h-4" />
-                  )}
-                </Button>
-              </>
-            ) : isLoading ? (
-              <div className="flex items-center gap-2 text-white/60 text-sm">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>正在加载流源 {currentStreamIndex + 1}/{currentStreams.length}...</span>
+      {/* 顶部信息栏 */}
+      <div 
+        className={cn(
+          "absolute top-0 left-0 right-0 p-6 z-10",
+          "bg-gradient-to-b from-black/80 to-transparent",
+          "transition-all duration-300",
+          showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
+        )}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            {channel.logo && !logoError ? (
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 ring-2 ring-white/20">
+                <Image
+                  src={channel.logo}
+                  alt={channel.name}
+                  width={56}
+                  height={56}
+                  className="w-full h-full object-contain p-1"
+                  unoptimized
+                  onError={() => setLogoError(true)}
+                />
               </div>
             ) : (
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex items-start gap-2 text-amber-400 text-sm">
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-medium">无法在浏览器中播放此流</p>
-                    {errorMessage && (
-                      <p className="text-amber-300/70 text-xs mt-1">{errorMessage}</p>
-                    )}
-                    {currentStream && (
-                      <p className="text-white/40 text-xs mt-1 break-all">
-                        流地址: {currentStream.url.substring(0, 60)}...
-                      </p>
-                    )}
-                    {currentStreams.length > 1 && (
-                      <p className="text-white/40 text-xs mt-1">
-                        正在尝试 {currentStreamIndex + 1}/{currentStreams.length} 个流源
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {currentStreams.length > currentStreamIndex + 1 && (
-                    <Button
-                      onClick={tryNextStream}
-                      variant="outline"
-                      className="border-white/20 bg-white/5 hover:bg-white/10 text-white flex-1"
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      尝试下一个流源
-                    </Button>
-                  )}
-                  <Button
-                    onClick={copyStreamUrl}
-                    variant="outline"
-                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white flex-1"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    {copied ? "已复制!" : "复制流地址"}
-                  </Button>
-                </div>
-                <div className="text-white/30 text-xs mt-2 p-2 bg-white/5 rounded">
-                  <p className="font-medium mb-1">提示：</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>已使用 hls.js 播放器，支持 HLS (.m3u8) 流</li>
-                    <li>部分 IPTV 流需要特定的 HTTP headers（Referer/User-Agent）</li>
-                    <li>如果仍然无法播放，可能是 CORS 限制，建议使用 VLC、PotPlayer、IINA 等播放器</li>
-                    <li>复制流地址后，可在外部播放器中打开</li>
-                    <li>错误代码 4 通常表示：CORS 限制、网络连接失败或流格式不支持</li>
-                  </ul>
-                </div>
+              <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center ring-2 ring-white/20">
+                <span className="text-2xl font-bold text-white/40">{channel.name.charAt(0)}</span>
               </div>
             )}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="badge-live">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse mr-1" />
+                  直播中
+                </span>
+                {currentStreams.length > 1 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/60 text-xs">
+                    <Layers className="w-3 h-3" />
+                    {currentStreams.length} 个流源
+                  </span>
+                )}
+              </div>
+              <h2 className="text-xl font-bold text-white">{channel.name}</h2>
+              <p className="text-white/50 text-sm">{channel.categories[0] || "综合频道"}</p>
+            </div>
           </div>
-        )}
+          
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+            <Clock className="w-4 h-4 text-white/40" />
+            <span className="text-white/60 font-mono text-sm">{currentTime}</span>
+          </div>
+        </div>
+      </div>
 
-        {!currentStream && (
-          <div className="flex items-center gap-2 text-white/40 text-sm">
-            <AlertCircle className="w-4 h-4" />
-            <span>此频道暂无可用流</span>
-          </div>
+      {/* 底部控制栏 */}
+      <div 
+        className={cn(
+          "absolute bottom-0 left-0 right-0 p-6 z-10",
+          "bg-gradient-to-t from-black via-black/80 to-transparent",
+          "transition-all duration-300",
+          showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
         )}
+      >
+        {currentStream && !playbackError && !isLoading ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* 播放/暂停 */}
+              <button
+                onClick={isPlaying ? handlePause : handlePlay}
+                className={cn(
+                  "w-14 h-14 rounded-full flex items-center justify-center",
+                  "bg-white text-black hover:bg-white/90",
+                  "transition-all duration-200 active:scale-95",
+                  "shadow-lg shadow-white/20",
+                )}
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6 fill-current" />
+                ) : (
+                  <Play className="w-6 h-6 fill-current ml-1" />
+                )}
+              </button>
+
+              {/* 音量 */}
+              <button
+                onClick={toggleMute}
+                className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center",
+                  "bg-white/10 hover:bg-white/20 border border-white/10",
+                  "transition-all duration-200 active:scale-95",
+                )}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white/80" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white/80" />
+                )}
+              </button>
+
+              {/* 下一个流源 */}
+              {currentStreams.length > 1 && (
+                <button
+                  onClick={tryNextStream}
+                  disabled={currentStreamIndex >= currentStreams.length - 1}
+                  className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center",
+                    "bg-white/10 hover:bg-white/20 border border-white/10",
+                    "transition-all duration-200 active:scale-95",
+                    "disabled:opacity-30 disabled:cursor-not-allowed",
+                  )}
+                  title={`切换流源 (${currentStreamIndex + 1}/${currentStreams.length})`}
+                >
+                  <SkipForward className="w-5 h-5 text-white/80" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* 复制链接 */}
+              <button
+                onClick={copyStreamUrl}
+                className={cn(
+                  "h-10 px-4 rounded-full flex items-center gap-2",
+                  "bg-white/10 hover:bg-white/20 border border-white/10",
+                  "transition-all duration-200 active:scale-95",
+                )}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-green-400">已复制</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-white/80" />
+                    <span className="text-sm text-white/80">复制链接</span>
+                  </>
+                )}
+              </button>
+
+              {/* 全屏 */}
+              <button
+                onClick={toggleFullscreen}
+                className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center",
+                  "bg-white/10 hover:bg-white/20 border border-white/10",
+                  "transition-all duration-200 active:scale-95",
+                )}
+              >
+                {isFullscreen ? (
+                  <Minimize className="w-5 h-5 text-white/80" />
+                ) : (
+                  <Maximize className="w-5 h-5 text-white/80" />
+                )}
+              </button>
+            </div>
+          </div>
+        ) : playbackError ? (
+          <ErrorDisplay
+            errorMessage={errorMessage}
+            currentStreamIndex={currentStreamIndex}
+            totalStreams={currentStreams.length}
+            onTryNext={tryNextStream}
+            onCopyUrl={copyStreamUrl}
+            copied={copied}
+            streamUrl={currentStream?.url}
+          />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+// ===== 错误显示组件 =====
+function ErrorDisplay({
+  errorMessage,
+  currentStreamIndex,
+  totalStreams,
+  onTryNext,
+  onCopyUrl,
+  copied,
+  streamUrl,
+}: {
+  errorMessage: string
+  currentStreamIndex: number
+  totalStreams: number
+  onTryNext: () => void
+  onCopyUrl: () => void
+  copied: boolean
+  streamUrl?: string
+}) {
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* 错误信息 */}
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+        <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-amber-400">无法播放此流</p>
+          {errorMessage && (
+            <p className="text-amber-300/70 text-sm mt-1">{errorMessage}</p>
+          )}
+          {totalStreams > 1 && (
+            <p className="text-white/40 text-xs mt-2">
+              正在尝试 {currentStreamIndex + 1} / {totalStreams} 个流源
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="flex gap-3">
+        {totalStreams > currentStreamIndex + 1 && (
+          <button
+            onClick={onTryNext}
+            className={cn(
+              "flex-1 h-12 rounded-xl flex items-center justify-center gap-2",
+              "bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30",
+              "text-cyan-400 font-medium transition-all active:scale-98",
+            )}
+          >
+            <SkipForward className="w-4 h-4" />
+            尝试下一个流源
+          </button>
+        )}
+        <button
+          onClick={onCopyUrl}
+          className={cn(
+            "flex-1 h-12 rounded-xl flex items-center justify-center gap-2",
+            "bg-white/10 hover:bg-white/15 border border-white/10",
+            "text-white/80 font-medium transition-all active:scale-98",
+          )}
+        >
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied ? "已复制" : "复制流地址"}
+        </button>
+      </div>
+
+      {/* 提示信息 */}
+      <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+        <p className="text-white/50 text-xs font-medium mb-2 flex items-center gap-2">
+          <ExternalLink className="w-3.5 h-3.5" />
+          使用外部播放器
+        </p>
+        <p className="text-white/30 text-xs leading-relaxed">
+          部分 IPTV 流需要特定的播放器支持。推荐使用 VLC、PotPlayer、IINA 等播放器打开复制的流地址。
+        </p>
       </div>
     </div>
   )
