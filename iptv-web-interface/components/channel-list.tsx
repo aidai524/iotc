@@ -17,7 +17,6 @@ import {
   Sparkles
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ThemeToggleCompact } from "./theme-toggle"
 
 interface ChannelListProps {
   channels: Channel[]
@@ -78,9 +77,9 @@ export function ChannelList({
   // 加载状态
   if (loading) {
     return (
-      <div className="w-[420px] flex-shrink-0 flex flex-col h-full bg-card/80 backdrop-blur-xl border-r border-border">
+      <div className="w-[420px] flex-shrink-0 flex flex-col h-full glass border-r border-white/5">
         {/* 头部骨架 */}
-        <div className="p-5 border-b border-border space-y-4">
+        <div className="p-5 border-b border-white/5 space-y-4">
           <Skeleton className="h-10 w-full rounded-xl" suppressHydrationWarning />
           <Skeleton className="h-8 w-48" suppressHydrationWarning />
         </div>
@@ -102,7 +101,7 @@ export function ChannelList({
   // 空状态
   if (channels.length === 0 && !searchQuery) {
     return (
-      <div className="w-[420px] flex-shrink-0 flex flex-col h-full bg-card/80 backdrop-blur-xl border-r border-border">
+      <div className="w-[420px] flex-shrink-0 flex flex-col h-full glass border-r border-white/5">
         <Header
           showFavorites={showFavorites}
           countryName={countryName}
@@ -127,7 +126,7 @@ export function ChannelList({
             />
           ) : (
             <EmptyState
-              icon={<Tv2 className="w-16 h-16 text-primary/20" />}
+              icon={<Tv2 className="w-16 h-16 text-cyan-500/20" />}
               title="暂无频道数据"
               description="请稍后再试或刷新页面"
             />
@@ -138,7 +137,7 @@ export function ChannelList({
   }
 
   return (
-    <div className="w-[420px] flex-shrink-0 flex flex-col h-full bg-card/80 backdrop-blur-xl border-r border-border">
+    <div className="w-[420px] flex-shrink-0 flex flex-col h-full glass border-r border-white/5">
       <Header
         showFavorites={showFavorites}
         countryName={countryName}
@@ -159,11 +158,11 @@ export function ChannelList({
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
         {filteredChannels.length === 0 && searchQuery ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Search className="w-12 h-12 text-muted-foreground/20 mb-4" />
-            <p className="text-muted-foreground text-sm">未找到 "{searchQuery}"</p>
+            <Search className="w-12 h-12 text-white/10 mb-4" />
+            <p className="text-white/40 text-sm">未找到 "{searchQuery}"</p>
             <button
               onClick={handleClearSearch}
-              className="mt-3 text-primary text-sm hover:text-primary/80 transition-colors"
+              className="mt-3 text-cyan-400 text-sm hover:text-cyan-300 transition-colors"
             >
               清除搜索
             </button>
@@ -226,10 +225,10 @@ function Header({
   onClearSearch,
 }: HeaderProps) {
   return (
-    <div className="p-5 border-b border-border space-y-4">
+    <div className="p-5 border-b border-white/5 space-y-4">
       {/* 搜索框 */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
         <input
           type="text"
           value={searchQuery}
@@ -237,18 +236,18 @@ function Header({
           placeholder="搜索频道..."
           className={cn(
             "w-full h-11 pl-11 pr-10 rounded-xl",
-            "bg-secondary/50 border border-border",
-            "text-foreground placeholder:text-muted-foreground",
-            "focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
+            "bg-white/5 border border-white/10",
+            "text-white placeholder:text-white/30",
+            "focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20",
             "transition-all duration-200",
           )}
         />
         {searchQuery && (
           <button
             onClick={onClearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-secondary transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/10 transition-colors"
           >
-            <X className="w-4 h-4 text-muted-foreground" />
+            <X className="w-4 h-4 text-white/40" />
           </button>
         )}
       </div>
@@ -278,62 +277,56 @@ function Header({
                 <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-foreground">收藏频道</h2>
-                <p className="text-xs text-muted-foreground">{channelCount} 个频道</p>
+                <h2 className="text-lg font-bold text-white">收藏频道</h2>
+                <p className="text-xs text-white/40">{channelCount} 个频道</p>
               </div>
             </>
           ) : (
             <>
-              <div className="p-2 rounded-xl bg-primary/20">
-                <Radio className="w-5 h-5 text-primary" />
+              <div className="p-2 rounded-xl bg-cyan-500/20">
+                <Radio className="w-5 h-5 text-cyan-400" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-foreground">{countryName || "全部频道"}</h2>
-                <p className="text-xs text-muted-foreground">{channelCount} 个频道可用</p>
+                <h2 className="text-lg font-bold text-white">{countryName || "全部频道"}</h2>
+                <p className="text-xs text-white/40">{channelCount} 个频道可用</p>
               </div>
             </>
           )}
         </div>
 
-        {/* 操作按钮组 */}
-        <div className="flex items-center gap-1.5">
-          {/* 主题切换 */}
-          <ThemeToggleCompact />
-          
-          {/* 收藏切换按钮 */}
-          {onToggleFavorites && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onToggleFavorites()
-              }}
-              className={cn(
-                "relative p-2.5 rounded-xl transition-all duration-200",
-                "hover:bg-secondary/50 active:scale-95",
-                showFavorites && "bg-secondary/50",
-              )}
-              title={showFavorites ? "返回全部频道" : `查看收藏 (${favoritesCount})`}
-            >
-              {showFavorites ? (
-                <ArrowLeft className="w-5 h-5 text-foreground/80" />
-              ) : (
-                <>
-                  <Star className={cn(
-                    "w-5 h-5 transition-colors",
-                    favoritesCount > 0 ? "text-amber-400" : "text-foreground/40"
-                  )} />
-                  {favoritesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-amber-500 text-[10px] font-bold text-black">
-                      {favoritesCount > 99 ? "99+" : favoritesCount}
-                    </span>
-                  )}
-                </>
-              )}
-            </button>
-          )}
-        </div>
+        {/* 收藏切换按钮 */}
+        {onToggleFavorites && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onToggleFavorites()
+            }}
+            className={cn(
+              "relative p-2.5 rounded-xl transition-all duration-200",
+              "hover:bg-white/10 active:scale-95",
+              showFavorites && "bg-white/10",
+            )}
+            title={showFavorites ? "返回全部频道" : `查看收藏 (${favoritesCount})`}
+          >
+            {showFavorites ? (
+              <ArrowLeft className="w-5 h-5 text-white/80" />
+            ) : (
+              <>
+                <Star className={cn(
+                  "w-5 h-5 transition-colors",
+                  favoritesCount > 0 ? "text-amber-400" : "text-white/40"
+                )} />
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-amber-500 text-[10px] font-bold text-black">
+                    {favoritesCount > 99 ? "99+" : favoritesCount}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -344,20 +337,20 @@ function TestingProgress({ progress }: { progress: { completed: number; total: n
   const percentage = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0
   
   return (
-    <div className="flex-1 flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
-      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+    <div className="flex-1 flex items-center gap-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+      <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
       <div className="flex-1">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium text-primary">正在检测...</span>
-          <span className="text-xs text-muted-foreground">{percentage}%</span>
+          <span className="text-sm font-medium text-cyan-400">正在检测...</span>
+          <span className="text-xs text-white/50">{percentage}%</span>
         </div>
-        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-300"
+            className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full transition-all duration-300"
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1">
+        <p className="text-[10px] text-white/40 mt-1">
           {progress.completed} / {progress.total} 个频道
         </p>
       </div>
@@ -393,8 +386,8 @@ function TestButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className={cn(
         "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl",
-        "bg-primary/15 border border-primary/20",
-        "text-primary hover:bg-primary/25",
+        "bg-cyan-500/15 border border-cyan-500/20",
+        "text-cyan-400 hover:bg-cyan-500/25",
         "transition-all duration-200 active:scale-98",
       )}
     >

@@ -52,12 +52,12 @@ export const ChannelCard = memo(
           "transition-all duration-300 ease-out",
           "border border-transparent",
           // 默认状态
-          "bg-card/50 hover:bg-card-hover dark:bg-card/30 dark:hover:bg-card/50",
+          "bg-white/[0.03] hover:bg-white/[0.08]",
           // 选中状态 - 更明显的视觉反馈
           isSelected && [
-            "bg-gradient-to-r from-primary/15 via-primary/10 to-transparent",
-            "border-primary/30",
-            "shadow-lg shadow-primary/10 dark:shadow-primary/5",
+            "bg-gradient-to-r from-cyan-500/15 via-cyan-500/10 to-transparent",
+            "border-cyan-500/30",
+            "shadow-lg shadow-cyan-500/10",
           ],
           // 悬停时的缩放效果
           "hover:scale-[1.01] active:scale-[0.99]",
@@ -71,7 +71,7 @@ export const ChannelCard = memo(
           className={cn(
             "absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-300",
             isSelected 
-              ? "h-10 bg-gradient-to-b from-primary/80 via-primary to-primary/80 shadow-lg shadow-primary/50" 
+              ? "h-10 bg-gradient-to-b from-cyan-400 via-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/50" 
               : "h-0 bg-transparent"
           )}
         />
@@ -80,9 +80,9 @@ export const ChannelCard = memo(
         <div 
           className={cn(
             "relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0",
-            "bg-gradient-to-br from-secondary to-secondary/50",
-            "ring-1 ring-border transition-all duration-300",
-            isSelected && "ring-primary/40 shadow-md shadow-primary/20",
+            "bg-gradient-to-br from-white/10 to-white/5",
+            "ring-1 ring-white/10 transition-all duration-300",
+            isSelected && "ring-cyan-500/40 shadow-md shadow-cyan-500/20",
           )}
         >
           {channel.logo && !logoError ? (
@@ -101,7 +101,7 @@ export const ChannelCard = memo(
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-muted-foreground text-lg font-bold">
+              <span className="text-white/40 text-lg font-bold">
                 {channel.name.charAt(0)}
               </span>
             </div>
@@ -118,7 +118,7 @@ export const ChannelCard = memo(
                 "absolute inset-0 flex items-center justify-center",
                 "bg-black/70 backdrop-blur-sm",
                 "opacity-0 group-hover:opacity-100 transition-all duration-200",
-                "hover:bg-primary/30",
+                "hover:bg-cyan-500/30",
               )}
             >
               <Play className="w-5 h-5 text-white fill-white drop-shadow-lg" />
@@ -133,7 +133,7 @@ export const ChannelCard = memo(
             <h3
               className={cn(
                 "text-sm font-semibold truncate transition-colors duration-200",
-                isSelected ? "text-foreground" : "text-foreground/85 group-hover:text-foreground",
+                isSelected ? "text-white" : "text-white/85 group-hover:text-white",
               )}
             >
               {channel.name}
@@ -152,7 +152,7 @@ export const ChannelCard = memo(
             
             {/* 流数量 */}
             {streamCount > 1 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-[10px] font-medium">
                 <Layers className="w-2.5 h-2.5" />
                 {streamCount}
               </span>
@@ -170,7 +170,7 @@ export const ChannelCard = memo(
             
             {/* EPG 标签 */}
             {hasEpg && (
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-medium">
                 <Sparkles className="w-2.5 h-2.5" />
                 EPG
               </span>
@@ -186,7 +186,7 @@ export const ChannelCard = memo(
           }}
           className={cn(
             "flex-shrink-0 p-2 rounded-xl transition-all duration-200",
-            "hover:bg-secondary active:scale-90",
+            "hover:bg-white/10 active:scale-90",
             "focus-ring",
           )}
           title={isFavorite ? "取消收藏" : "收藏"}
@@ -196,8 +196,8 @@ export const ChannelCard = memo(
             className={cn(
               "w-5 h-5 transition-all duration-300",
               isFavorite
-                ? "text-amber-500 fill-amber-500 drop-shadow-lg"
-                : "text-muted-foreground hover:text-amber-500/70",
+                ? "text-amber-400 fill-amber-400 drop-shadow-lg"
+                : "text-white/30 hover:text-amber-400/70",
             )}
           />
         </button>
@@ -207,7 +207,7 @@ export const ChannelCard = memo(
           className={cn(
             "absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300",
             "ring-1 ring-inset",
-            isHovered && !isSelected ? "ring-border" : "ring-transparent",
+            isHovered && !isSelected ? "ring-white/10" : "ring-transparent",
           )}
         />
       </div>

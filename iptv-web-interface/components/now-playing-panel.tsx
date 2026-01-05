@@ -316,32 +316,32 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
   // 空状态 - 未选择频道
   if (!channel) {
     return (
-      <div className="flex-1 relative h-full bg-gradient-to-br from-background via-card to-background overflow-hidden">
+      <div className="flex-1 relative h-full bg-gradient-to-br from-[#0a0a18] via-[#0f0f20] to-[#080814] overflow-hidden">
         {/* 装饰性背景元素 */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl" />
         </div>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
           <div className="relative mb-8">
-            <div className="w-28 h-28 rounded-3xl bg-secondary flex items-center justify-center border border-border animate-pulse-glow">
-              <Radio className="w-12 h-12 text-muted-foreground" />
+            <div className="w-28 h-28 rounded-3xl bg-white/5 flex items-center justify-center border border-white/10 animate-pulse-glow">
+              <Radio className="w-12 h-12 text-white/20" />
             </div>
-            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
-              <Play className="w-5 h-5 text-primary fill-primary" />
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
+              <Play className="w-5 h-5 text-cyan-400 fill-cyan-400" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-foreground/80 mb-2">选择频道开始观看</h2>
-          <p className="text-muted-foreground text-center max-w-md">
+          <h2 className="text-2xl font-bold text-white/80 mb-2">选择频道开始观看</h2>
+          <p className="text-white/40 text-center max-w-md">
             从左侧列表中选择一个频道，点击即可开始播放直播内容
           </p>
         </div>
 
         {/* 时间显示 */}
-        <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary border border-border">
-          <Clock className="w-4 h-4 text-muted-foreground" />
-          <span className="text-foreground/60 font-mono text-sm">{currentTime}</span>
+        <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          <Clock className="w-4 h-4 text-white/40" />
+          <span className="text-white/60 font-mono text-sm">{currentTime}</span>
         </div>
       </div>
     )
@@ -389,8 +389,8 @@ export function NowPlayingPanel({ channel, stream, streams = [] }: NowPlayingPan
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-full border-2 border-primary/30 animate-ping absolute inset-0" />
-                  <div className="w-16 h-16 rounded-full border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                  <div className="w-16 h-16 rounded-full border-2 border-cyan-500/30 animate-ping absolute inset-0" />
+                  <div className="w-16 h-16 rounded-full border-2 border-t-cyan-400 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
                 </div>
                 <div className="text-center">
                   <p className="text-white/80 font-medium">正在连接...</p>
@@ -619,8 +619,8 @@ function ErrorDisplay({
             onClick={onTryNext}
             className={cn(
               "flex-1 h-12 rounded-xl flex items-center justify-center gap-2",
-              "bg-primary/20 hover:bg-primary/30 border border-primary/30",
-              "text-primary font-medium transition-all active:scale-98",
+              "bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30",
+              "text-cyan-400 font-medium transition-all active:scale-98",
             )}
           >
             <SkipForward className="w-4 h-4" />
